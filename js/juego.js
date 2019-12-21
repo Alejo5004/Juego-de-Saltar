@@ -1,10 +1,12 @@
-var canvas, ctx, x, y;
+var canvas, ctx, width, heigh, bestScore;
 
 width = 800;
 heigh = 500;
 
 canvas = document.getElementById('canvas');
 ctx = canvas.getContext("2d");
+
+bestScore = localStorage.getItem("bestScore");
 
 function eraseCanvas(){
     canvas.width = width;
@@ -24,14 +26,12 @@ var sphere = {
     radius: radius,
     x: 100,
     y: ySphere,
-    jump: 32,
+    jump: 28,
     gravity: 2,
     jumping: false,
     color: '#008b8b',
     speed: 0,
     dead: false,
-    score: 0,
-    data:2,
 }
 
 var heighEnemy = 100;
@@ -46,7 +46,8 @@ var enemy = {
 
 var level = {
     speed: 15,
-    fps: 2,
+    fps: 90,
+    score: 0,
 }
 
 var keys = {
@@ -75,10 +76,17 @@ function enemyCreation(){
 }
 
 function text(){
+    // score
     ctx.font = "bold 20px sans-serif";
     ctx.fillStyle = '#e5be01';
-    ctx.fillText("Puntuacion: "+sphere.score, 50, 50);
+    ctx.fillText("Puntuacion: "+level.score, 50, 50);
+    
+    // Best Scores
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillStyle = '#0f0';
+    ctx.fillText(localStorage.getItem("bestScore") == undefined  || localStorage.getItem("bestScore") == null ? 'Mejor Puntaje: 0' : 'Mejor Puntaje: ' + localStorage.getItem("bestScore"), 600, 50);
 
+    // game over
     if(sphere.dead == true){
         ctx.font = "bold 40px sans-serif";
         ctx.fillStyle = '#000'
@@ -96,24 +104,28 @@ document.addEventListener('keydown', function(event){
         if(sphere.dead == false){
             sphere.jumping = true;
         }else{
+            if(localStorage.getItem("bestScore") == undefined || localStorage.getItem("bestScore") == null || localStorage.getItem("bestScore") < level.score){
+                localStorage.setItem("bestScore", level.score)
+            }
+            level.fps = 1000;
+            level.speed = 15;
+            interval();
             eraseCanvas();
             sphere.dead = false;
-            level.speed = 15;
             enemy.x = width + 100;
-            sphere.score = 0;
-            
+            level.score = 0;
         }
     }
 });
 
-// ----------------- Bucle Principal ------------------- //
+// ----------------- Logica ------------------- //
 
 function gravity(){
     if(sphere.jumping == true){
         if(sphere.y - sphere.jump - sphere.gravity > sphere.y){
             sphere.jumping = false;
             sphere.y = ySphere;
-            sphere.jump = 32;
+            sphere.jump = 28;
         }else{
             sphere.jump -= sphere.gravity;
             sphere.y -= sphere.jump;
@@ -124,7 +136,7 @@ function gravity(){
 function enemyMovement(){
     if(enemy.x < -enemy.heigh){
         enemy.x = width + enemy.heigh;
-        sphere.score ++;
+        level.score ++;
         score();
     }else{
         enemy.x -= level.speed;
@@ -136,14 +148,15 @@ function collision(){
      && enemy.y == (sphere.y - sphere.radius)){
         sphere.dead = true;
         level.speed = 0;
-        level.fps = 3;
     }
 }
 
 function score(){
-    if(sphere.score % 5 == 0 && sphere.score != 1){
-        level.fps += 0,01;
-        interval();
+    if(level.score % 5 == 0 && level.score != 1){
+        if(sphere.dead == false){
+            level.fps -= 10;
+            interval();
+        }
     }
 }
 
@@ -153,6 +166,7 @@ function start(){
     enemyCreation();
     text();
 }
+// ----------------- Bucle Principal ------------------- //
 
 function loop(){
     eraseCanvas();
@@ -161,12 +175,9 @@ function loop(){
     collision();
     enemyMovement();
 }
+
 function interval(){
     clearInterval(loop2);
-    var loop2 = setInterval(function(){
-        loop();
-        console.log(level.fps)
-    }, 100 / level.fps);
+    var loop2 = setInterval(loop, level.fps);
 }
 interval();
-
